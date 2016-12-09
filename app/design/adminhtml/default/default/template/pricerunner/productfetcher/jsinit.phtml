@@ -1,0 +1,35 @@
+<!--
+/**
+ * 2016 Modified Solutions ApS www.modified.dk hej@modified.dk
+ *
+ * NOTICE OF LICENSE
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * @author    Modified Solutions ApS
+ * @category  Pricerunner
+ * @package   Pricerunner_ProductFetcher
+ * @copyright Copyright (c) 2016 Modified Solutions ApS (https://www.modified.dk)
+ * @license   Mozilla Public License Version 2.0
+ */
+-->
+<script type="text/javascript">
+    function initProductFetcher() {
+
+        if (!document.getElementById("pricerunner_productfetcher_fetcher_group_testfeed")) {
+            // Don't perform for website and store view
+            return;
+        }
+
+        window.ADMIN_URL_TEST = '<?php echo Mage::getUrl(''); ?>';
+
+        // Make this element work like a hidden field
+        document.getElementById("pricerunner_productfetcher_fetcher_group_testfeed").style.display = "none";
+
+        $('pricerunner_productfetcher_fetcher_group_testfeed').up().insert('<a href="/pricerunnerfeed/index/test" target="_blank" id="pricerunner_productfetcher_testlink"><button type="button" id="pricerunner_productfetcher_testbutton" style="display: none; margin-top: 1em;"><span id="pricerunner_productfetcher_testbutton_label" style="display:block;"></span></button></a>');
+        
+        productFetcher = new ProductFetcher();
+    }
+</script>

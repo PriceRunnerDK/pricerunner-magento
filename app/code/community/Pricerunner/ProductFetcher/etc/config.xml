@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * 2016 Modified Solutions ApS www.modified.dk hej@modified.dk
+ *
+ * NOTICE OF LICENSE
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * @author    Modified Solutions ApS
+ * @category  Pricerunner
+ * @package   Pricerunner_ProductFetcher
+ * @copyright Copyright (c) 2016 Modified Solutions ApS (https://www.modified.dk)
+ * @license   Mozilla Public License Version 2.0
+ */
+-->
+<config>
+
+    <modules>
+        <Pricerunner_ProductFetcher>
+            <version>1.0.3</version>
+        </Pricerunner_ProductFetcher>
+    </modules>
+    <global>
+        
+        <models>
+            <pricerunner_productfetcher>
+                <class>Pricerunner_ProductFetcher_Model</class>
+            </pricerunner_productfetcher>
+        </models>
+
+        <blocks>
+            <pricerunner_productfetcher>
+               <class>Pricerunner_ProductFetcher_Block</class>
+            </pricerunner_productfetcher>
+        </blocks>
+        
+        <helpers>
+            <pricerunner_productfetcher>
+                <class>Pricerunner_ProductFetcher_Helper</class>
+            </pricerunner_productfetcher>
+        </helpers>
+
+        <events>
+            <admin_system_config_changed_section_pricerunner_productfetcher>
+                <observers>
+                    <mymodule>
+                        <type>singleton</type>
+                        <class>Pricerunner_ProductFetcher_Model_Observer</class>
+                        <method>handle_adminSystemConfigChangedSection</method>
+                    </mymodule>
+                </observers>
+            </admin_system_config_changed_section_pricerunner_productfetcher>
+        </events>
+    </global>
+    
+    <frontend>
+        <routers>
+            <pricerunner_productfetcher_admin>
+                <use>standard</use>
+                <args>
+                   <module>Pricerunner_ProductFetcher</module>
+                    <frontName>pricerunnerfeed</frontName>
+                </args>
+            </pricerunner_productfetcher_admin>
+        </routers>
+    </frontend>
+
+    <adminhtml>
+         <layout>
+            <updates>
+                <pricerunner_productfetcher>
+                    <file>pricerunner_productfetcher.xml</file>
+                </pricerunner_productfetcher>
+            </updates>
+        </layout>
+        <acl>
+            <resources>
+                <admin>
+                    <children>
+                        <system>
+                            <children>
+                                <config>
+                                    <children>
+                                        <pricerunner_productfetcher translate="title" module="pricerunner_productfetcher">
+                                            <title>XML Feed Settings</title>
+                                        </pricerunner_productfetcher>
+                                    </children>
+                                </config>
+                            </children>
+                        </system>
+                    </children>
+                </admin>
+            </resources>
+        </acl>
+    </adminhtml>    
+</config>

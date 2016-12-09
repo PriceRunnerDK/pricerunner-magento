@@ -1,0 +1,3 @@
+[submodule "app/code/community/Pricerunner/ProductFetcher/Helper/pricerunner-php-sdk"]
+	path = app/code/community/Pricerunner/ProductFetcher/Helper/pricerunner-php-sdk
+	url = https://ModifiedSolutions@github.com/ModifiedSolutions/pricerunner-php-sdk.git
