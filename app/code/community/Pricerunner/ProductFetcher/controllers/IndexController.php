@@ -15,7 +15,7 @@
  * @license   Mozilla Public License Version 2.0
  */
 
-require_once(dirname(__FILE__) . '/../Helper/PricerunnerSDK/files.php');
+require_once(dirname(__FILE__) . '/../Helper/pricerunner-php-sdk/src/files.php');
 require_once(dirname(__FILE__) . '/../Helper/CustomValidator/MagentoProductValidator.php');
 require_once(dirname(__FILE__) . '/../Helper/CustomValidator/MagentoProductCollectionValidator.php');
 
@@ -107,12 +107,7 @@ class Pricerunner_ProductFetcher_IndexController
             ->addStoreFilter($storeId);
 
         // Get only product type in this array, when configurable and grouped products contains simple or virtual products
-        $collection->addAttributeToFilter('type_id', array(
-            Mage_Catalog_Model_Product_Type::TYPE_SIMPLE,
-            Mage_Catalog_Model_Product_Type::TYPE_BUNDLE,
-            Mage_Catalog_Model_Product_Type::TYPE_VIRTUAL,
-            Mage_Downloadable_Model_Product_Type::TYPE_DOWNLOADABLE       
-        ));
+        $collection->addAttributeToFilter('type_id', array('nin' => [Mage_Catalog_Model_Product_Type::TYPE_BUNDLE, Mage_Catalog_Model_Product_Type::TYPE_GROUPED]));
 
         // Filter visible / enabled products
         $collection->addAttributeToFilter('status', array('neq' => Mage_Catalog_Model_Product_Status::STATUS_DISABLED));
@@ -147,31 +142,21 @@ class Pricerunner_ProductFetcher_IndexController
 
         $store = Mage::app()->getStore($product->getStoreId());
 
-        // Get product's parent to check if the product is in a group
-        $parentId = $this->getParentId($productId);
-        $parentProducts = Mage::getResourceModel('catalog/product_collection')
-            ->addAttributeToFilter('entity_id', array('in' => $parentId));
-        $parentProduct = null;
-        
-        foreach ($parentProducts as $pp) 
-        {
-            $parentProduct = $pp;
-            break; // Make sure to get only the first object
-        }
-
         // Set category name
         $categoryName = $this->getProductCategory($product);
         
-        // Get parent category
-        if (!empty($parentId) && empty($categoryName)) 
+        // Set product link
+        $productUrl = $product->getUrlPath();
+        if (!empty($productUrl))
+        {            
+            $baseUrl = $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+            $productLink = $baseUrl . $product->getUrlPath();
+        }
+        else 
         {
-            $categoryName = $this->getProductCategory($parentProduct);
+            $productLink = $product->getProductUrl();
         }
         
-        // Set product link
-        $baseUrl = $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
-        $productLink = $baseUrl . $product->getUrlPath();
-
         // Set image url 
         $imageUrl = "";
         $image = $product->getImage();
@@ -198,26 +183,31 @@ class Pricerunner_ProductFetcher_IndexController
         $manufacturer = Mage::getStoreConfig('pricerunner_productfetcher/map_group/manufacturer');
         $manufacturerName = isset($manufacturer) && $manufacturer != "default" ? $product->getAttributeText($manufacturer) : "";
 
+        $deliveryTime = Mage::getStoreConfig('pricerunner_productfetcher/map_group/delivery_time');
+        $deliveryTime = isset($deliveryTime) && $deliveryTime != "default" ? $product[$deliveryTime]  : "";
+
         $pricerunnerProduct = new Product();
+
+        $description = html_entity_decode($product->getDescription());
 
         $pricerunnerProduct->setProductName(PricerunnerSDK::getXmlReadyString($product->getName()));
         $pricerunnerProduct->setCategoryName(PricerunnerSDK::getXmlReadyString($categoryName));
-        $pricerunnerProduct->setSku($productSku); 
-        $pricerunnerProduct->setPrice($price); 
+        $pricerunnerProduct->setSku($productSku);
+        $pricerunnerProduct->setPrice($price);
         $pricerunnerProduct->setShippingCost(Mage::getStoreConfig('carriers/flatrate/price', $product->getStoreId())); // Flat rate
         $pricerunnerProduct->setProductUrl($productLink);
         $pricerunnerProduct->setManufacturerSku($manufacturerSku);
         $pricerunnerProduct->setManufacturer($manufacturerName);
         $pricerunnerProduct->setEan($ean);
-        $pricerunnerProduct->setDescription(PricerunnerSDK::getXmlReadyString($product->getDescription()));
+        $pricerunnerProduct->setDescription(PricerunnerSDK::getXmlReadyString($description));
         $pricerunnerProduct->setImageUrl($imageUrl);
         $pricerunnerProduct->setStockStatus($stockStatus);
-        $pricerunnerProduct->setDeliveryTime('');
-        $pricerunnerProduct->setRetailerMessage(''); 
+        $pricerunnerProduct->setDeliveryTime($deliveryTime);
+        $pricerunnerProduct->setRetailerMessage('');
         $pricerunnerProduct->setProductState('');
 
-        return $pricerunnerProduct;        
-    } 
+        return $pricerunnerProduct;
+    }
 
     /**
      * Get parent id of a product
@@ -242,40 +232,10 @@ class Pricerunner_ProductFetcher_IndexController
      * @param Mage_Catalog_Model_Product $product
      * @return string
      */
-    private function getDisplayPrice($product) 
-    {        
-        $price = $product->getPrice();
-
-        // Get minimum price for the bundle product
-        if ($product->getTypeId() == Mage_Catalog_Model_Product_Type::TYPE_BUNDLE) 
-        {
-            $optionCol = $product->getTypeInstance(true)->getOptionsCollection($product);
-            $selectionCol = $product->getTypeInstance(true)->getSelectionsCollection(
-                $product->getTypeInstance(true)->getOptionsIds($product),
-                $product
-            );
-
-            $optionCol->appendSelections($selectionCol);
-            $price = $product->getPrice();
-
-            foreach ($optionCol as $option) 
-            {
-                if($option->required) 
-                {
-                    $selections = $option->getSelections();
-                    $minPrice = min(array_map(function ($s) { return $s->price; }, $selections));
-
-                    if($product->getSpecialPrice() > 0) 
-                    {
-                        $minPrice *= $product->getSpecialPrice() / 100;
-                    }
-
-                    $price += round($minPrice, 2);
-                }  
-            }
-        }
-
-        return sprintf("%.2F", $price);
+    private function getDisplayPrice($product)
+    {
+        $priceIncludingTax = Mage::helper('tax')->getPrice($product, $product->getFinalPrice(), true);
+        return sprintf("%.2F", $priceIncludingTax);
     }
 
     /**

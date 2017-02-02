@@ -15,7 +15,7 @@
  * @license   Mozilla Public License Version 2.0
  */
 
-require_once(dirname(__FILE__) . '/../Helper/PricerunnerSDK/files.php');
+require_once(dirname(__FILE__) . '/../Helper/pricerunner-php-sdk/src/files.php');
 
 use \PricerunnerSDK\PricerunnerSDK;
 
@@ -31,25 +31,15 @@ class Pricerunner_ProductFetcher_Model_Observer
         $hash = Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/feedhash');
 
         // Check if this module config is enabled
-        if (Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/enabled_feed' ) == 1 && empty($hash)) 
-        {
+        if (Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/enabled_feed' ) == 1 && empty($hash)) {
         	$this->pricerunnerRegistration();
-        } 
-        elseif (Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/enabled_feed' ) == 0) 
-        {
-           Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/feedhash');
-           Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/email');
-           Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/phone');
-           Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/testfeed');
-
-           Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/map_group/ean');
-        } 
+        } elseif (Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/enabled_feed' ) == 0) {
+           $this->deactivate();
+        }
     }
 
     /**
      * Send mail to registration
-     * 
-     * Description
      * @return Exception|void
      */
     private function pricerunnerRegistration()
@@ -57,15 +47,18 @@ class Pricerunner_ProductFetcher_Model_Observer
         // Generate hash string
         $randomString = PricerunnerSDK::getRandomString();
 
-        $domain = Mage::getBaseUrl (Mage_Core_Model_Store::URL_TYPE_WEB);
+        $domain  = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK);
         $feedUrl = $domain . "pricerunnerfeed?hash=" . $randomString;
 
         try {
-            PricerunnerSDK::postRegistration($this->getDomainName()
-                , Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/phone')
-                , Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/email')
-                , $domain
-                , $feedUrl);
+            // Post registration data to pricerunner.
+            PricerunnerSDK::postRegistration(
+                Mage::app()->getDefaultStoreView()->getFrontendName(),
+                Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/phone'),
+                Mage::getStoreConfig('pricerunner_productfetcher/fetcher_group/email'),
+                $domain,
+                $feedUrl
+            );
 
             // Success registration :)
             Mage::getSingleton('core/session')->addSuccess('Your feed information has been sent to Pricerunner. The XML Feed can be accessed on ' . $feedUrl);
@@ -77,26 +70,27 @@ class Pricerunner_ProductFetcher_Model_Observer
         {
             // Registration error...
             Mage::getModel('core/config')->saveConfig('pricerunner_productfetcher/fetcher_group/enabled_feed', 0);
-
             Mage::getSingleton('core/session')->addError('Unable to send feed information to Pricerunner.');
         }
+
+
+        $this->cleanConfigCache();
     }
 
-    /**
-     * Get only domain name from the url
-     * @return string|false
-     */
-    private function getDomainName()
+    private function deactivate()
     {
-        $url = Mage::getBaseUrl (Mage_Core_Model_Store::URL_TYPE_WEB);
-        $urlobj = parse_url($url);
-        $domain = $urlobj['host'];
+        Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/feedhash');
+        Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/email');
+        Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/phone');
+        Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/fetcher_group/testfeed');
+        Mage::getModel('core/config')->deleteConfig('pricerunner_productfetcher/map_group/ean');
+    }
 
-        if (preg_match('/(?P<domain>[a-z0-9][a-z0-9\-]{1,63}\.[a-z\.]{2,6})$/i', $domain, $regs)) 
-        {
-            return $regs['domain'];
-        }
+    private function cleanConfigCache()
+    {
+        $cacheType = 'config';
 
-        return false;
+        Mage::app()->getCacheInstance()->cleanType($cacheType);
+        Mage::dispatchEvent('adminhtml_cache_refresh_type', array('type' => $cacheType));
     }
 }

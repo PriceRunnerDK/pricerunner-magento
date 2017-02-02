@@ -28,7 +28,7 @@ class Pricerunner_ProductFetcher_Model_Config_Enabledfeedcomment
      */
     public function getCommentText()
     {
-    	$feedUrl = Mage::getBaseUrl (Mage_Core_Model_Store::URL_TYPE_WEB) . "pricerunnerfeed?hash=";
+    	$feedUrl = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK) . "pricerunnerfeed?hash=";
 
     	$string = "When enabled, Pricerunner will get the feed link and be able to access the feed on " . $feedUrl . "somehashstring";
 
@@ -39,7 +39,7 @@ class Pricerunner_ProductFetcher_Model_Config_Enabledfeedcomment
     	if ($moduleEnabled == 1) 
     	{
     		$feedUrl .= $hash;
-			$string = "You can access the XML feed here <a href='" . $feedUrl . "' target='_blank'>" .$feedUrl. "</a>";
+			$string = "You can access the XML feed here <a href='" . $feedUrl . "' id='pricerunner_feed_link' target='_blank'>" .$feedUrl. "</a>";
 		}
       
         return $string;

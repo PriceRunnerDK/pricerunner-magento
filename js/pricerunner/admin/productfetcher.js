@@ -44,10 +44,16 @@ ProductFetcher.prototype = {
         $("pricerunner_productfetcher_testbutton").style.display = "block";
 
         // Get store info such email, etc..
-        response = this.getJson("/pricerunnerfeed/config/store");
-        email = response.email;
-        enabled = response.enabled;
-        ean = response.ean;
+        response = this.getJson(window.ADMIN_URL +"pricerunnerfeed/config/store");
+
+        if (typeof response === typeof undefined) {
+            alert('An unexpected error occurred.');
+            return;
+        }
+
+        email = response.hasOwnProperty('email') ? response.email : '';
+        enabled = response.hasOwnProperty('enabled') ? response.enabled : '';
+        ean = response.hasOwnProperty('ean') ? response.ean : '';
         
         // Set store mail as default value of email, when it's empty
     	if ($("pricerunner_productfetcher_fetcher_group_email") !== null 
