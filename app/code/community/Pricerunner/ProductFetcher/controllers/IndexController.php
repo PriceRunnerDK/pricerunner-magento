@@ -203,8 +203,8 @@ class Pricerunner_ProductFetcher_IndexController
         $pricerunnerProduct->setImageUrl($imageUrl);
         $pricerunnerProduct->setStockStatus($stockStatus);
         $pricerunnerProduct->setDeliveryTime($deliveryTime);
-        $pricerunnerProduct->setRetailerMessage('');
-        $pricerunnerProduct->setProductState('');
+        // $pricerunnerProduct->setRetailerMessage('');
+        $pricerunnerProduct->setProductState('New');
 
         return $pricerunnerProduct;
     }
